@@ -8,8 +8,10 @@ const logger = require("morgan");
 
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
+const oauthRouter = require("./routes/oauth");
 
-const { clientId, clientSecret } = require("./config");
+const { client_id, client_secret } = require("./config");
+console.log("client_id, client_secret: ", client_id, client_secret);
 let saveData = {};
 const fnSaveToken = (body = {}) => {
   const parseBody = JSON.parse(body);
@@ -38,11 +40,12 @@ var api_url = "http://localhost:3000";
 app.get("/naverlogin", function (req, res) {
   api_url =
     "https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=" +
-    clientId +
+    client_id +
     "&redirect_uri=" +
     redirectURI +
     "&state=" +
     state;
+  console.log("api_url: ", api_url);
   res.writeHead(200, { "Content-Type": "text/html;charset=utf-8" });
   res.end(
     "<a href='" +
@@ -56,9 +59,9 @@ app.get("/callback", function (req, res) {
   state = req.query.state;
   api_url =
     "https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id=" +
-    clientId +
+    client_id +
     "&client_secret=" +
-    clientSecret +
+    client_secret +
     "&redirect_uri=" +
     redirectURI +
     "&code=" +
@@ -69,8 +72,8 @@ app.get("/callback", function (req, res) {
   var options = {
     url: api_url,
     headers: {
-      "X-Naver-Client-Id": clientId,
-      "X-Naver-Client-Secret": clientSecret,
+      "X-Naver-Client-Id": client_id,
+      "X-Naver-Client-Secret": client_secret,
     },
   };
 
@@ -112,6 +115,7 @@ app.get("/member", function (req, res) {
 
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
+app.use("/oauth", oauthRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
