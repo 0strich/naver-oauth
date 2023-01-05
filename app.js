@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const createError = require("http-errors");
 const express = require("express");
 const path = require("path");
@@ -7,10 +9,17 @@ const logger = require("morgan");
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
 
-const app = express();
+const { clientId, clientSecret } = require("./config");
+let saveData = {};
+const fnSaveToken = (body = {}) => {
+  const parseBody = JSON.parse(body);
+  saveData.access_token = parseBody?.access_token;
+  saveData.refresh_token = parseBody?.refresh_token;
+  saveData.token_type = parseBody?.token_type;
+  saveData.expires_in = parseBody?.expires_in;
+};
 
-const client_id = "RoAIZLS2Va_6NwPtTgTN";
-const client_secret = "lNYgTr09xn";
+const app = express();
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -29,7 +38,7 @@ var api_url = "http://localhost:3000";
 app.get("/naverlogin", function (req, res) {
   api_url =
     "https://nid.naver.com/oauth2.0/authorize?response_type=code&client_id=" +
-    client_id +
+    clientId +
     "&redirect_uri=" +
     redirectURI +
     "&state=" +
@@ -47,9 +56,9 @@ app.get("/callback", function (req, res) {
   state = req.query.state;
   api_url =
     "https://nid.naver.com/oauth2.0/token?grant_type=authorization_code&client_id=" +
-    client_id +
+    clientId +
     "&client_secret=" +
-    client_secret +
+    clientSecret +
     "&redirect_uri=" +
     redirectURI +
     "&code=" +
@@ -60,15 +69,15 @@ app.get("/callback", function (req, res) {
   var options = {
     url: api_url,
     headers: {
-      "X-Naver-Client-Id": client_id,
-      "X-Naver-Client-Secret": client_secret,
+      "X-Naver-Client-Id": clientId,
+      "X-Naver-Client-Secret": clientSecret,
     },
   };
 
   request.get(options, function (error, response, body) {
     if (!error && response.statusCode == 200) {
       res.writeHead(200, { "Content-Type": "text/json;charset=utf-8" });
-      console.log("body: ", body);
+      fnSaveToken(body);
       res.end(body);
     } else {
       res.status(response.statusCode).end();
@@ -77,9 +86,9 @@ app.get("/callback", function (req, res) {
   });
 });
 
-const token = `AAAAOAihMXsRZFTt5QRlRoR5WS9OdBvuCOLDFn4VKCK04mQH4J_tuFPV6ozS3H2bPYTtmVJ9FjIbsHmMgAmPd8yIf6g`;
-const header = "Bearer " + token; // Bearer 다음에 공백 추가
 app.get("/member", function (req, res) {
+  const token = saveData?.access_token;
+  const header = "Bearer " + token; // Bearer 다음에 공백 추가
   const api_url = "https://openapi.naver.com/v1/nid/me";
   const request = require("request");
   const options = {
